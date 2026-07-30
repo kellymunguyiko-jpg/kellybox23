@@ -16,7 +16,7 @@ export interface Movie {
   rating: number;
   duration: string;
   genre: string[];
-  type: "movie" | "series";
+  type: "movie" | "series" | "game";
   videoUrl: string;
   videoType: "youtube" | "mega" | "mediafire" | "gdrive" | "other";
   downloadUrl?: string;

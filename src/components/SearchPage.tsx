@@ -54,7 +54,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
   const [submittedQuery, setSubmittedQuery] = useState(initialQuery); // only updates on Enter/Search click
   const [focused, setFocused] = useState(false);
   const [activeGenre, setActiveGenre] = useState("All");
-  const [activeType, setActiveType] = useState<"all" | "movie" | "series">("all");
+  const [activeType, setActiveType] = useState<"all" | "movie" | "series" | "game">("all");
   const [sortBy, setSortBy] = useState<"relevance" | "rating" | "year" | "title">("relevance");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -543,11 +543,11 @@ const SearchPage: React.FC<SearchPageProps> = ({
                             <span
                               className="text-[9px] px-1.5 py-0.5 rounded font-black"
                               style={{
-                                background: movie.type === "series" ? "rgba(59,130,246,0.2)" : "rgba(229,9,20,0.2)",
-                                color: movie.type === "series" ? "#60a5fa" : "#f87171",
+                                background: movie.type === "series" ? "rgba(59,130,246,0.2)" : movie.type === "game" ? "rgba(34,197,94,0.2)" : "rgba(229,9,20,0.2)",
+                                color: movie.type === "series" ? "#60a5fa" : movie.type === "game" ? "#4ade80" : "#f87171",
                               }}
                             >
-                              {movie.type === "series" ? "SERIES" : "MOVIE"}
+                              {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
                             </span>
                             {movie.rating && (
                               <>
@@ -668,7 +668,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
               className="flex items-center rounded-xl overflow-hidden flex-shrink-0"
               style={{ background: "#111", border: "1px solid #1e1e1e" }}
             >
-              {(["all", "movie", "series"] as const).map(t => (
+              {(["all", "movie", "series", "game"] as const).map(t => (
                 <button
                   key={t}
                   onClick={() => { setActiveType(t); if (t !== "all") setSearchSubmitted(true); }}
@@ -679,7 +679,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
                     boxShadow: activeType === t ? "0 2px 8px rgba(229,9,20,0.4)" : "none",
                   }}
                 >
-                  {t === "all" ? "All" : t === "movie" ? "🎬 Movies" : "📺 Series"}
+                  {t === "all" ? "All" : t === "movie" ? "🎬 Movies" : t === "series" ? "📺 Series" : "🎮 Games"}
                 </button>
               ))}
             </div>
@@ -940,7 +940,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
                     <h2 className="text-white font-black text-xl flex items-center gap-2">
                       {activeGenre !== "All" && <span>{GENRE_META[activeGenre]?.emoji}</span>}
                       {activeGenre !== "All" ? activeGenre : "All"}{" "}
-                      {activeType !== "all" ? (activeType === "movie" ? "Movies" : "Series") : "Titles"}
+                      {activeType !== "all" ? (activeType === "movie" ? "Movies" : activeType === "series" ? "Series" : "Games") : "Titles"}
                     </h2>
                     <p className="text-gray-600 text-sm mt-0.5">
                       <span className="text-white font-bold">{filtered.length}</span> titles
@@ -975,7 +975,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
                     style={{ background: "rgba(229,9,20,0.15)", border: "1px solid rgba(229,9,20,0.3)", color: "#f87171" }}
                     onClick={() => setActiveType("all")}
                   >
-                    {activeType === "movie" ? "🎬 Movies" : "📺 Series"} <X size={10} />
+                    {activeType === "movie" ? "🎬 Movies" : activeType === "series" ? "📺 Series" : "🎮 Games"} <X size={10} />
                   </span>
                 )}
                 <button
@@ -1150,12 +1150,12 @@ const SearchResultCard: React.FC<CardProps> = ({
           <span
             className="text-[9px] px-1.5 py-0.5 rounded-md font-black"
             style={{
-              background: movie.type === "series" ? "rgba(59,130,246,0.85)" : "rgba(229,9,20,0.85)",
+              background: movie.type === "series" ? "rgba(59,130,246,0.85)" : movie.type === "game" ? "rgba(34,197,94,0.85)" : "rgba(229,9,20,0.85)",
               color: "white",
               backdropFilter: "blur(4px)",
             }}
           >
-            {movie.type === "series" ? "SERIES" : "MOVIE"}
+            {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
           </span>
         </div>
 
@@ -1318,11 +1318,11 @@ const SearchResultListItem: React.FC<CardProps> = ({
           <span
             className="text-[9px] px-1.5 py-0.5 rounded font-black"
             style={{
-              background: movie.type === "series" ? "rgba(59,130,246,0.2)" : "rgba(229,9,20,0.2)",
-              color: movie.type === "series" ? "#60a5fa" : "#f87171",
+              background: movie.type === "series" ? "rgba(59,130,246,0.2)" : movie.type === "game" ? "rgba(34,197,94,0.2)" : "rgba(229,9,20,0.2)",
+              color: movie.type === "series" ? "#60a5fa" : movie.type === "game" ? "#4ade80" : "#f87171",
             }}
           >
-            {movie.type === "series" ? "SERIES" : "MOVIE"}
+            {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
           </span>
           {movie.genre?.slice(0, 2).map(g => (
             <span key={g} className="text-gray-600 text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "rgba(255,255,255,0.05)" }}>{g}</span>

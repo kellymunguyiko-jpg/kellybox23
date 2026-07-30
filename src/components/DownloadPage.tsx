@@ -230,7 +230,7 @@ const DownloadPage: React.FC<DownloadPageProps> = ({ movie, onClose, onWatch }) 
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-[#E50914] font-black text-sm">KELLYBOX</span>
                 <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
-                  {movie.type === "series" ? "📺 Series" : "🎬 Movie"}
+                  {movie.type === "series" ? "📺 Series" : movie.type === "game" ? "🎮 Game" : "🎬 Movie"}
                 </span>
                 {allLinks.length > 0 && (
                   <span className="text-xs bg-green-900/50 border border-green-700/50 text-green-400 px-2 py-0.5 rounded flex items-center gap-1">

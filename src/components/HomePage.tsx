@@ -21,6 +21,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const trending = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 12);
   const movieList = movies.filter((m) => m.type === "movie").slice(0, 12);
   const seriesList = movies.filter((m) => m.type === "series").slice(0, 12);
+  const gameList = movies.filter((m) => m.type === "game").slice(0, 12);
   const myListMovies = movies.filter((m) => myList.includes(m.id || ""));
 
   return (
@@ -67,6 +68,18 @@ const HomePage: React.FC<HomePageProps> = ({
             onAddList={onAddList}
             myList={myList}
             icon={<Tv size={20} />}
+            onDownload={onDownload}
+          />
+        )}
+
+        {gameList.length > 0 && (
+          <MovieRow
+            title="Games"
+            movies={gameList}
+            onWatch={onWatch}
+            onAddList={onAddList}
+            myList={myList}
+            icon={<span className="text-lg">🎮</span>}
             onDownload={onDownload}
           />
         )}

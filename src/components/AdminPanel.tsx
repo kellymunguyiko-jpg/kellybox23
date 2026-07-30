@@ -72,7 +72,7 @@ const emptyDownloadLink: DownloadLink = {
   type: "mega",
 };
 
-// ─── Cloudinary Upload Hook ───────────────────────────────────────────────────
+// ─── Cloudinary Upload Hook ───────────────────────────────────────────
 async function uploadToCloudinary(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
@@ -93,70 +93,72 @@ async function uploadToCloudinary(file: File): Promise<string> {
   return data.secure_url as string;
 }
 
-// ─── Google Drive URL converter ───────────────────────────────────────────────
-function convertGoogleDriveUrl(url: string): string {
-  const fileMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-  if (fileMatch) return `https://drive.google.com/uc?export=view&id=${fileMatch[1]}`;
-  const openMatch = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
-  if (openMatch) return `https://drive.google.com/uc?export=view&id=${openMatch[1]}`;
-  return url;
-}
-function isGoogleDriveUrl(url: string): boolean { return url.includes("drive.google.com"); }
+// ─── URL Helpers (NO Google Drive) ────────────────────────────────────
+function isGoogleDriveUrl(_url: string): boolean { return false; }
 
 interface ImageUploadFieldProps {
-  label: string; required?: boolean; value: string;
-  onChange: (url: string) => void; previewClass?: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (url: string) => void;
+  previewClass?: string;
 }
 
 const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
-  label, required, value, onChange, previewClass = "h-24 w-16",
+  label,
+  required,
+  value,
+  onChange,
+  previewClass = "h-24 w-16",
 }) => {
-  const [mode, setMode] = useState<"upload" | "gdrive" | "url">("upload");
+  const [mode, setMode] = useState<"upload" | "url">("upload");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [gdriveInput, setGdriveInput] = useState("");
-  const [gdriveError, setGdriveError] = useState("");
-  const [gdriveApplied, setGdriveApplied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith("image/")) { setUploadError("Please select an image file"); return; }
-    if (file.size > 10 * 1024 * 1024) { setUploadError("File too large — max 10MB"); return; }
-    setUploading(true); setUploadError(""); setUploadSuccess(false); setProgress(0);
-    // Simulate progress
-    const interval = setInterval(() => setProgress(p => Math.min(p + 12, 85)), 200);
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File too large — max 10MB");
+      return;
+    }
+    setUploading(true);
+    setUploadError("");
+    setUploadSuccess(false);
+    setProgress(0);
+
+    const interval = setInterval(() => setProgress((p) => Math.min(p + 12, 85)), 200);
     try {
       const url = await uploadToCloudinary(file);
-      clearInterval(interval); setProgress(100);
-      onChange(url); setUploadSuccess(true);
+      clearInterval(interval);
+      setProgress(100);
+      onChange(url);
+      setUploadSuccess(true);
       setTimeout(() => { setUploadSuccess(false); setProgress(0); }, 3000);
     } catch (err: unknown) {
-      clearInterval(interval); setProgress(0);
+      clearInterval(interval);
+      setProgress(0);
       setUploadError("❌ " + (err instanceof Error ? err.message : "Upload failed"));
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault(); setDragOver(false);
+    e.preventDefault();
+    setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
   };
 
-  const handleGDriveApply = () => {
-    setGdriveError(""); setGdriveApplied(false);
-    if (!gdriveInput.trim()) { setGdriveError("Please paste a Google Drive link"); return; }
-    if (!isGoogleDriveUrl(gdriveInput)) { setGdriveError("This doesn't look like a Google Drive link"); return; }
-    const converted = convertGoogleDriveUrl(gdriveInput.trim());
-    onChange(converted); setGdriveApplied(true);
-    setTimeout(() => setGdriveApplied(false), 2500);
-  };
-
   const TABS = [
     { id: "upload" as const, icon: "☁", label: "Cloudinary", color: "#E50914" },
-    { id: "gdrive" as const, icon: "🟢", label: "Drive",     color: "#22c55e" },
     { id: "url"    as const, icon: "🔗", label: "URL",       color: "#60a5fa" },
   ];
 
@@ -170,7 +172,8 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         <div className="flex items-center gap-1 bg-[#111] rounded-lg p-0.5 border border-gray-800">
           {TABS.map(t => (
             <button
-              key={t.id} type="button"
+              key={t.id}
+              type="button"
               onClick={() => setMode(t.id)}
               className="text-[10px] px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1"
               style={{
@@ -198,10 +201,18 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             transform: dragOver ? "scale(1.01)" : "none",
           }}
         >
-          <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+              e.target.value = "";
+            }}
+          />
 
-          {/* Content */}
           <div className="p-6 flex flex-col items-center gap-3">
             {uploading ? (
               <>
@@ -266,83 +277,6 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
         </div>
       )}
 
-      {/* ── Google Drive ── */}
-      {mode === "gdrive" && (
-        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(34,197,94,0.2)", background: "#0d1f0d" }}>
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3" style={{ background: "rgba(34,197,94,0.08)", borderBottom: "1px solid rgba(34,197,94,0.15)" }}>
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0 shadow-lg">
-              <span className="text-sm">🟢</span>
-            </div>
-            <div>
-              <p className="text-green-300 text-xs font-bold">Google Drive Upload</p>
-              <p className="text-gray-500 text-[10px]">Paste any Google Drive share link</p>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5 bg-green-900/30 border border-green-700/30 rounded-full px-2 py-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-[9px] text-green-400 font-bold">CONNECTED</span>
-            </div>
-          </div>
-
-          <div className="p-4 space-y-3">
-            {/* Input */}
-            <div className="relative">
-              <input
-                value={gdriveInput}
-                onChange={e => { setGdriveInput(e.target.value); setGdriveError(""); }}
-                onKeyDown={e => e.key === "Enter" && handleGDriveApply()}
-                placeholder="https://drive.google.com/file/d/YOUR_FILE_ID/view"
-                className="w-full rounded-xl px-4 py-3 text-xs text-white outline-none transition-all pr-24"
-                style={{
-                  background: "#081808",
-                  border: gdriveError ? "1.5px solid #ef4444" : gdriveApplied ? "1.5px solid #22c55e" : "1.5px solid rgba(34,197,94,0.25)",
-                }}
-              />
-              {gdriveInput && (
-                <button type="button" onClick={() => setGdriveInput("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-700/50 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
-                  <X size={11} />
-                </button>
-              )}
-            </div>
-
-            {gdriveError && <p className="text-red-400 text-xs flex items-center gap-1">⚠ {gdriveError}</p>}
-            {gdriveApplied && <p className="text-green-400 text-xs flex items-center gap-1">✅ Google Drive link applied successfully!</p>}
-
-            <button type="button" onClick={handleGDriveApply}
-              className="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
-              style={{ background: gdriveInput ? "linear-gradient(135deg, #16a34a, #22c55e)" : "#1a2a1a", color: gdriveInput ? "white" : "#555" }}>
-              <CheckCircle size={13} /> Apply Drive Link
-            </button>
-
-            {/* How-to steps */}
-            <div className="rounded-xl p-3" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.04)" }}>
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2">📋 How to get the link</p>
-              <div className="space-y-1.5">
-                {[
-                  { step: "1", text: "Open your image in Google Drive" },
-                  { step: "2", text: <>Right-click → <span className="text-gray-200">"Share"</span> or top-right Share button</> },
-                  { step: "3", text: <><span className="text-green-400">"Anyone with the link"</span> → Viewer → Done</> },
-                  { step: "4", text: <>Click <span className="text-gray-200">"Copy link"</span> and paste above</> },
-                ].map(s => (
-                  <div key={s.step} className="flex items-start gap-2">
-                    <div className="w-4 h-4 rounded-full bg-green-900/60 border border-green-700/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-green-400 text-[8px] font-black">{s.step}</span>
-                    </div>
-                    <p className="text-gray-500 text-[10px] leading-relaxed">{s.text}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 pt-2 border-t border-white/5">
-                <p className="text-yellow-600 text-[10px] flex items-start gap-1">
-                  ⚠ <span>Make sure sharing is set to <span className="text-yellow-400 font-semibold">"Anyone with the link"</span> — otherwise the image won't display</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── URL ── */}
       {mode === "url" && (
         <div className="space-y-2">
@@ -373,12 +307,9 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             <div className="flex items-center gap-1.5 mb-1">
               <CheckCircle size={11} className="text-green-400 flex-shrink-0" />
               <span className="text-green-400 text-xs font-bold">Image Ready</span>
-              {isGoogleDriveUrl(value) && (
-                <span className="text-[9px] bg-green-900/40 border border-green-700/40 text-green-400 px-1.5 py-0.5 rounded-full">🟢 Drive</span>
-              )}
             </div>
             <p className="text-gray-600 text-[10px] truncate">{value.slice(0, 50)}...</p>
-            <button type="button" onClick={() => { onChange(""); setGdriveInput(""); }}
+            <button type="button" onClick={() => onChange("")}
               className="text-red-500 hover:text-red-400 text-[10px] mt-1.5 flex items-center gap-1 transition-colors">
               <X size={9} /> Remove image
             </button>
@@ -389,7 +320,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   );
 };
 
-// ─── Firestore Rules Constants ────────────────────────────────────────────────
+// ─── Firestore Rules Constants ────────────────────────────────────────
 const RULES_SERVER1 = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -399,15 +330,12 @@ service cloud.firestore {
     }
 
     // ✅ SERVER 1 RULES — Reads are public, Writes require login
-    // Go to: console.firebase.google.com → kellybox-febfa → Firestore → Rules
 
-    // Movies — public read, authenticated write
     match /movies/{movieId} {
       allow read: if true;
       allow create, update, delete: if isAuth();
     }
 
-    // Series — public read, authenticated write
     match /series/{seriesId} {
       allow read: if true;
       allow create, update, delete: if isAuth();
@@ -417,7 +345,6 @@ service cloud.firestore {
       }
     }
 
-    // Featured / Trending — public read, auth write
     match /featured/{docId} {
       allow read: if true;
       allow write: if isAuth();
@@ -427,23 +354,19 @@ service cloud.firestore {
       allow write: if isAuth();
     }
 
-    // Settings — public read, auth write
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAuth();
     }
 
-    // Users — own data only
     match /users/{userId} {
       allow read, write: if isAuth() && request.auth.uid == userId;
     }
 
-    // Watchlist — own data only
     match /watchlist/{docId} {
       allow read, write: if isAuth();
     }
 
-    // Block everything else
     match /{document=**} {
       allow read, write: if false;
     }
@@ -454,17 +377,13 @@ const RULES_SERVER2 = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ✅ OPEN RULES FOR SERVER 2 — All reads public, all writes open
-    // This allows KellyBox admin to save content to Server 2
-    // You can tighten this later once auth cross-project is set up
+    // ✅ OPEN RULES FOR SERVER 2
 
-    // Movies — fully open read/write
     match /movies/{movieId} {
       allow read: if true;
       allow create, update, delete: if true;
     }
 
-    // Series — fully open read/write
     match /series/{seriesId} {
       allow read: if true;
       allow create, update, delete: if true;
@@ -474,7 +393,6 @@ service cloud.firestore {
       }
     }
 
-    // Featured / Trending — fully open
     match /featured/{docId} {
       allow read, write: if true;
     }
@@ -482,19 +400,17 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Settings — fully open
     match /settings/{docId} {
       allow read, write: if true;
     }
 
-    // Block everything else
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }`;
 
-// ─── Admin Panel ───────────────────────────────────────────────────────────────
+// ─── Admin Panel ───────────────────────────────────────────────────────
 const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) => {
   const [form, setForm] = useState<Omit<Movie, "id">>(emptyMovie);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -538,7 +454,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
   const autoDetectType = (url: string): DownloadLink["type"] => {
     if (url.includes("mega.nz")) return "mega";
     if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-    if (url.includes("drive.google.com")) return "gdrive";
     if (url.includes("mediafire.com")) return "mediafire";
     return "direct";
   };
@@ -586,13 +501,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
       };
 
       if (editingId) {
-        // Edit on the correct server
         const targetDb = editingServer === 2 ? db2 : db;
         const realId = editingId.startsWith("s1_") ? editingId.slice(3) : editingId.startsWith("s2_") ? editingId.slice(3) : editingId;
         await updateDoc(doc(targetDb, "movies", realId), movieData);
         setSuccess("✅ Updated on Server " + (editingServer || 1) + " successfully!");
       } else {
-        // Save to selected server(s)
         if (selectedServer === 1 || selectedServer === "both") {
           await addDoc(collection(db, "movies"), movieData);
         }
@@ -620,7 +533,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
   };
 
   const handleEdit = (movie: Movie) => {
-    // Detect server from id prefix
     const srv = movie.id?.startsWith("s2_") ? 2 : 1;
     setEditingServer(srv);
     setSelectedServer(srv);
@@ -727,6 +639,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
           <span>{movies.filter((m) => m.type === "series").length} Series</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-300 flex-shrink-0">
+          <span className="text-lg">🎮</span>
+          <span>{movies.filter((m) => m.type === "game").length} Games</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-300 flex-shrink-0">
           <Star size={16} className="text-yellow-400" />
           <span>{movies.filter((m) => m.featured).length} Featured</span>
         </div>
@@ -773,7 +689,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
       <div className="flex-1 overflow-y-auto p-6">
         {/* Messages */}
         {error && (
-          <div className="mb-4 rounded-xl overflow-hidden" style={{border:"1px solid rgba(239,68,68,0.4)"}}>
+          <div className="mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(239,68,68,0.4)" }}>
             <div className="bg-red-900/30 px-4 py-3 flex items-start justify-between gap-3">
               <div className="flex items-start gap-2 flex-1">
                 <span className="text-red-400 text-lg mt-0.5">⚠️</span>
@@ -795,13 +711,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
 
             {/* ── Firestore Rules Panel ── */}
             {showRules && (
-              <div className="bg-[#0a0a0a] p-4 space-y-4" style={{borderTop:"1px solid rgba(239,68,68,0.2)"}}>
+              <div className="bg-[#0a0a0a] p-4 space-y-4" style={{ borderTop: "1px solid rgba(239,68,68,0.2)" }}>
                 <div className="flex items-center gap-2">
                   <Shield size={16} className="text-yellow-400" />
                   <p className="text-yellow-300 text-xs font-bold uppercase tracking-wider">Fix: Apply These Firestore Rules</p>
                 </div>
 
-                {/* Step by step */}
                 <div className="space-y-2">
                   {[
                     "Go to Firebase Console → firestore.google.com",
@@ -867,7 +782,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                   <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
                     <p className="text-blue-300 text-[10px] font-bold mb-1">ℹ️ Server 2 uses open rules</p>
                     <p className="text-gray-400 text-[10px] leading-relaxed">
-                      Server 2 (chatting-e7a27) uses open write rules so KellyBox can save content without cross-project authentication. Only the movies collection is open — everything else is blocked.
+                      Server 2 (chatting-e7a27) uses open write rules so KellyBox admin can save content without cross-project authentication. Only the movies collection is open — everything else is blocked.
                     </p>
                   </div>
                 </div>
@@ -875,10 +790,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                 <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3">
                   <p className="text-yellow-300 text-[10px] font-bold mb-1">⚡ How to apply:</p>
                   <p className="text-gray-400 text-[10px] leading-relaxed">
-                    1. Go to <span className="text-white">console.firebase.google.com</span><br/>
-                    2. Select the project → <span className="text-white">Firestore Database</span> → <span className="text-white">Rules</span> tab<br/>
-                    3. Replace ALL existing text with the copied rules<br/>
-                    4. Click <span className="text-white font-bold">Publish</span><br/>
+                    1. Go to <span className="text-white">console.firebase.google.com</span><br />
+                    2. Select the project → <span className="text-white">Firestore Database</span> → <span className="text-white">Rules</span> tab<br />
+                    3. Replace ALL existing text with the copied rules<br />
+                    4. Click <span className="text-white font-bold">Publish</span><br />
                     5. Do this for <span className="text-red-400">both projects</span> separately
                   </p>
                 </div>
@@ -942,12 +857,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                           className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                             movie.type === "series"
                               ? "bg-blue-600/20 text-blue-400 border border-blue-500/40"
+                              : movie.type === "game"
+                              ? "bg-green-600/20 text-green-400 border border-green-500/40"
                               : "bg-red-600/20 text-red-400 border border-red-500/40"
                           }`}
                         >
                           {movie.type.toUpperCase()}
                         </span>
-                        {/* Server badge */}
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 ${
                           movie.id?.startsWith("s2_")
                             ? "bg-blue-900/30 text-blue-400 border border-blue-700/40"
@@ -965,7 +881,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                           {movie.videoType === "youtube"   ? <span className="text-[10px]">🎥</span> :
                            movie.videoType === "mega"      ? <span className="text-[10px]">☁️</span> :
                            movie.videoType === "mediafire" ? <span className="text-[10px]">🔵</span> :
-                           movie.videoType === "gdrive"    ? <span className="text-[10px]">🟢</span> :
                                                              <Link size={10} className="text-purple-400" />}
                           <span className="uppercase text-[9px] font-bold">{movie.videoType}</span>
                         </span>
@@ -1023,7 +938,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
 
               {/* Type */}
               <div className="flex gap-3">
-                {(["movie", "series"] as const).map((t) => (
+                {(["movie", "series", "game"] as const).map((t) => (
                   <button
                     key={t}
                     type="button"
@@ -1034,7 +949,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                         : "bg-transparent border-gray-700 text-gray-400 hover:border-gray-500"
                     }`}
                   >
-                    {t === "movie" ? "🎬 Movie" : "📺 Series"}
+                    {t === "movie" ? "🎬 Movie" : t === "series" ? "📺 Series" : "🎮 Game"}
                   </button>
                 ))}
               </div>
@@ -1042,7 +957,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
               {/* ─── Server Selector ─── */}
               {!editingId && (
                 <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(99,102,241,0.4)", background: "linear-gradient(135deg, #0f0f1a 0%, #0a0a14 100%)" }}>
-                  {/* Header */}
                   <div className="flex items-center gap-3 px-4 py-3" style={{ background: "rgba(99,102,241,0.12)", borderBottom: "1px solid rgba(99,102,241,0.25)" }}>
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}>
                       <Shield size={14} className="text-white" />
@@ -1058,7 +972,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                   </div>
 
                   <div className="p-4 space-y-3">
-                    {/* Server Cards */}
                     <div className="grid grid-cols-3 gap-2">
                       {/* Server 1 */}
                       <button
@@ -1136,7 +1049,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                       </button>
                     </div>
 
-                    {/* Info bar */}
                     <div className="rounded-lg px-3 py-2 flex items-center gap-2" style={{
                       background: selectedServer === 1 ? "rgba(229,9,20,0.08)" : selectedServer === 2 ? "rgba(59,130,246,0.08)" : "rgba(34,197,94,0.08)",
                       border: selectedServer === 1 ? "1px solid rgba(229,9,20,0.2)" : selectedServer === 2 ? "1px solid rgba(59,130,246,0.2)" : "1px solid rgba(34,197,94,0.2)",
@@ -1222,16 +1134,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                 </label>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {([
-                    { value: "youtube",   icon: "🎥", label: "YouTube",      color: "border-red-600/70 bg-red-900/20",    activeGlow: "shadow-red-900/50" },
+                    { value: "youtube",   icon: "🎥", label: "YouTube",      color: "border-red-600/70 bg-red-900/20", activeGlow: "shadow-red-900/50" },
                     { value: "mega",      icon: "☁️", label: "Mega.nz",      color: "border-orange-600/70 bg-orange-900/20", activeGlow: "shadow-orange-900/50" },
-                    { value: "mediafire", icon: "🔵", label: "MediaFire",    color: "border-blue-600/70 bg-blue-900/20",  activeGlow: "shadow-blue-900/50" },
-                    { value: "gdrive",    icon: "🟢", label: "Google Drive", color: "border-green-600/70 bg-green-900/20", activeGlow: "shadow-green-900/50" },
+                    { value: "mediafire", icon: "🔵", label: "MediaFire",    color: "border-blue-600/70 bg-blue-900/20", activeGlow: "shadow-blue-900/50" },
                     { value: "other",     icon: "🔗", label: "Direct URL",   color: "border-purple-600/70 bg-purple-900/20", activeGlow: "shadow-purple-900/50" },
                   ] as const).map((vt) => (
                     <button
                       key={vt.value}
                       type="button"
-                      onClick={() => setForm((p) => ({ ...p, videoType: vt.value as "youtube" | "mega" | "mediafire" | "gdrive" | "other" }))}
+                      onClick={() => setForm((p) => ({ ...p, videoType: vt.value as "youtube" | "mega" | "mediafire" | "other" }))}
                       className={`py-3 text-xs rounded-xl font-bold transition-all border flex flex-col items-center justify-center gap-1.5 ${
                         form.videoType === vt.value
                           ? `${vt.color} text-white scale-[1.03] shadow-lg ${vt.activeGlow}`
@@ -1249,15 +1160,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                   form.videoType === "youtube"   ? "ring-1 ring-red-700/40" :
                   form.videoType === "mega"      ? "ring-1 ring-orange-700/40" :
                   form.videoType === "mediafire" ? "ring-1 ring-blue-700/40" :
-                  form.videoType === "gdrive"    ? "ring-1 ring-green-700/40" :
-                                                   "ring-1 ring-purple-700/40"
+                                                     "ring-1 ring-purple-700/40"
                 }`}>
-                  {/* Source icon prefix */}
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">
                     {form.videoType === "youtube"   ? "🎥" :
                      form.videoType === "mega"      ? "☁️" :
-                     form.videoType === "mediafire" ? "🔵" :
-                     form.videoType === "gdrive"    ? "🟢" : "🔗"}
+                     form.videoType === "mediafire" ? "🔵" : "🔗"}
                   </div>
                   <input
                     value={form.videoUrl}
@@ -1270,8 +1178,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                         setForm((p) => ({ ...p, videoType: "mega", videoUrl: val }));
                       } else if (val.includes("mediafire.com")) {
                         setForm((p) => ({ ...p, videoType: "mediafire", videoUrl: val }));
-                      } else if (val.includes("drive.google.com")) {
-                        setForm((p) => ({ ...p, videoType: "gdrive", videoUrl: convertGoogleDriveUrl(val) }));
                       } else {
                         setForm((p) => ({ ...p, videoUrl: val }));
                       }
@@ -1280,7 +1186,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                       form.videoType === "youtube"   ? "https://www.youtube.com/watch?v=... or https://youtu.be/..." :
                       form.videoType === "mega"      ? "https://mega.nz/file/... or https://mega.nz/embed/..." :
                       form.videoType === "mediafire" ? "https://www.mediafire.com/file/XXXXXX/filename.mp4/file" :
-                      form.videoType === "gdrive"    ? "https://drive.google.com/file/d/FILE_ID/view" :
                                                        "https://example.com/movie.mp4 or .mkv"
                     }
                     className="w-full bg-[#1e1e1e] border-0 text-white rounded-xl pl-10 pr-4 py-3 text-sm outline-none transition-colors placeholder-gray-600"
@@ -1305,12 +1210,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                     <div className="flex items-center gap-1.5 bg-blue-900/20 border border-blue-700/30 rounded-lg px-3 py-1.5">
                       <span className="text-[10px]">🔵</span>
                       <span className="text-blue-400 text-[10px] font-medium">MediaFire — user clicks to open MediaFire page</span>
-                    </div>
-                  )}
-                  {form.videoType === "gdrive" && (
-                    <div className="flex items-center gap-1.5 bg-green-900/20 border border-green-700/30 rounded-lg px-3 py-1.5">
-                      <span className="text-[10px]">🟢</span>
-                      <span className="text-green-400 text-[10px] font-medium">Google Drive embed — streams in player</span>
                     </div>
                   )}
                   {form.videoType === "other" && (
@@ -1351,34 +1250,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                     </div>
                   </div>
                 )}
-
-                {/* Google Drive how-to box */}
-                {form.videoType === "gdrive" && (
-                  <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid rgba(34,197,94,0.25)", background: "linear-gradient(135deg, #0a1a0d, #071209)" }}>
-                    <div className="flex items-center gap-2 px-3 py-2" style={{ background: "rgba(34,197,94,0.1)", borderBottom: "1px solid rgba(34,197,94,0.15)" }}>
-                      <span className="text-sm">🟢</span>
-                      <span className="text-green-300 text-xs font-bold">How to get Google Drive embed link</span>
-                    </div>
-                    <div className="p-3 space-y-2">
-                      {[
-                        { step: "1", text: "Upload video to Google Drive" },
-                        { step: "2", text: "Right-click → Share → Anyone with the link → Viewer" },
-                        { step: "3", text: 'Click "Copy link" and paste here' },
-                        { step: "4", text: "Link auto-converts to embed format ✅" },
-                      ].map((s) => (
-                        <div key={s.step} className="flex items-start gap-2.5">
-                          <div className="w-5 h-5 rounded-full bg-green-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{s.step}</div>
-                          <span className="text-gray-400 text-[10px] leading-relaxed">{s.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* ─── Video Thumbnail (shown before play) ─── */}
               <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(139,92,246,0.3)", background: "linear-gradient(135deg, #1a1025 0%, #0f0a1a 100%)" }}>
-                {/* Header */}
                 <div className="flex items-center gap-3 px-4 py-3" style={{ background: "rgba(139,92,246,0.1)", borderBottom: "1px solid rgba(139,92,246,0.2)" }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
                     <Film size={16} className="text-white" />
@@ -1403,7 +1278,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                         className="w-full h-full object-cover"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                       />
-                      {/* Overlay — mimics the video player look */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)" }}>
                         <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl" style={{ background: "rgba(229,9,20,0.9)", border: "3px solid rgba(255,255,255,0.3)" }}>
                           <Play size={24} className="text-white ml-1" fill="white" />
@@ -1411,7 +1285,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                         <p className="text-white text-xs font-bold mt-2 drop-shadow">{form.title || "Movie Title"}</p>
                         <p className="text-gray-300 text-[10px] mt-0.5 drop-shadow">{form.duration} • {form.year}</p>
                       </div>
-                      {/* Remove button */}
                       <button
                         type="button"
                         onClick={() => setForm(p => ({ ...p, thumbnailUrl: "" }))}
@@ -1504,7 +1377,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                               const detected = autoDetectType(e.target.value);
                               updateDownloadLink(idx, "type", detected);
                             }}
-                            placeholder="https://mega.nz/file/... or https://youtu.be/... or https://mediafire.com/file/... or direct .mp4"
+                            placeholder="https://mega.nz/file/... or https://youtu.be/... or direct .mp4"
                             className="w-full bg-[#2a2a2a] border border-gray-700 focus:border-green-500 text-white rounded-lg px-3 py-2 text-xs outline-none transition-colors"
                           />
                         </div>
@@ -1544,7 +1417,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                             >
                               <option value="mega">☁️ Mega.nz</option>
                               <option value="youtube">▶️ YouTube</option>
-                              <option value="gdrive">🟢 Google Drive</option>
                               <option value="mediafire">🔵 MediaFire</option>
                               <option value="direct">⬇️ Direct</option>
                             </select>
@@ -1558,13 +1430,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold border ${
                               dl.type === "mega"      ? "bg-red-900/30 text-red-400 border-red-700/50" :
                               dl.type === "youtube"   ? "bg-red-900/30 text-red-400 border-red-700/50" :
-                              dl.type === "gdrive"    ? "bg-green-900/30 text-green-400 border-green-700/50" :
                               dl.type === "mediafire" ? "bg-blue-900/30 text-blue-400 border-blue-700/50" :
                                                        "bg-gray-800 text-gray-400 border-gray-700"
                             }`}>
                               {dl.type === "mega"      ? "☁️ MEGA.NZ" :
                                dl.type === "youtube"   ? "▶️ YOUTUBE" :
-                               dl.type === "gdrive"    ? "🟢 GOOGLE DRIVE" :
                                dl.type === "mediafire" ? "🔵 MEDIAFIRE" :
                                                         "⬇️ DIRECT"}
                             </span>
@@ -1587,7 +1457,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ movies, onClose, onLogout }) =>
                 )}
 
                 <p className="text-gray-600 text-xs">
-                  💡 Supported: Mega.nz, YouTube, Google Drive, MediaFire, and direct .mp4/.mkv links. Add multiple qualities so users can choose.
+                  💡 Supported: Mega.nz, YouTube, MediaFire, and direct .mp4/.mkv links. Add multiple qualities so users can choose.
                 </p>
               </div>
 

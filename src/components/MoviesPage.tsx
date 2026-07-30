@@ -6,7 +6,7 @@ import GenreFilter from "./GenreFilter";
 
 interface MoviesPageProps {
   movies: Movie[];
-  type: "all" | "movie" | "series";
+  type: "all" | "movie" | "series" | "game";
   onWatch: (movie: Movie) => void;
   onAddList: (movie: Movie) => void;
   myList: string[];
@@ -35,6 +35,7 @@ const MoviesPage: React.FC<MoviesPageProps> = ({
     .filter((m) => {
       if (type === "movie") return m.type === "movie";
       if (type === "series") return m.type === "series";
+      if (type === "game") return m.type === "game";
       return true;
     })
     .filter((m) => selectedGenre === "All" || m.genre.includes(selectedGenre))
@@ -55,8 +56,8 @@ const MoviesPage: React.FC<MoviesPageProps> = ({
     });
 
   const title =
-    type === "movie" ? "Movies" : type === "series" ? "Series" : "All Content";
-  const Icon = type === "series" ? Tv : Film;
+    type === "movie" ? "Movies" : type === "series" ? "Series" : type === "game" ? "Games" : "All Content";
+  const Icon = type === "series" ? Tv : type === "game" ? Film : Film;
 
   return (
     <div className="min-h-screen bg-[#141414] pt-20 pb-12 px-4 md:px-8">

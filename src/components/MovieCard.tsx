@@ -116,9 +116,11 @@ const MovieCard: React.FC<MovieCardProps> = ({
             <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
               movie.type === "series"
                 ? "bg-blue-600 text-white"
+                : movie.type === "game"
+                ? "bg-green-600 text-white"
                 : "bg-[#E50914] text-white"
             }`}>
-              {movie.type === "series" ? "SERIES" : "MOVIE"}
+              {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
             </span>
           </div>
         </div>

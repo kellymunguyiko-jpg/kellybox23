@@ -8,7 +8,7 @@ interface NavbarProps {
   setSearchQuery: (q: string) => void;
 }
 
-const NAV_ITEMS = ["Home", "Movies", "Series", "My List"];
+const NAV_ITEMS = ["Home", "Movies", "Series", "Games", "My List"];
 
 const Navbar: React.FC<NavbarProps> = ({
   currentPage,

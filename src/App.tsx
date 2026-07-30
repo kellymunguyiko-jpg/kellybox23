@@ -265,7 +265,7 @@ function App() {
   const handleSetPage = (page: string) => {
     withLoading("Loading page...", () => {
       setCurrentPage(page);
-      if (page !== "movies" && page !== "series") {
+      if (page !== "movies" && page !== "series" && page !== "games" && page !== "search") {
         setSearchQuery("");
       }
     });
@@ -333,6 +333,18 @@ function App() {
           <MoviesPage
             movies={movies}
             type="series"
+            onWatch={handleWatch}
+            onAddList={handleAddList}
+            myList={myList}
+            searchQuery={searchQuery}
+            onDownload={handleDownload}
+          />
+        );
+      case "games":
+        return (
+          <MoviesPage
+            movies={movies}
+            type="game"
             onWatch={handleWatch}
             onAddList={handleAddList}
             myList={myList}

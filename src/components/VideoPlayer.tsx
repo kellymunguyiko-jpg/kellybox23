@@ -2,7 +2,7 @@ import {
   X, Plus, Star, Download, ExternalLink,
   Youtube, ChevronDown, ChevronUp, HardDrive, Play, CheckCircle,
   SkipForward, Zap, Film, ArrowLeft, Clock, Tag, Share2, ThumbsUp,
-  Copy, Check, Facebook, Twitter, MessageCircle,
+  Copy, Check, Facebook, Twitter, MessageCircle, Maximize, Minimize,
 } from "lucide-react";
 import { Movie } from "../types";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -268,10 +268,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [showShareModal, setShowShareModal] = useState(false);
   // Thumbnail overlay — show before user clicks play
   const thumbnailSrc = movie.thumbnailUrl || movie.backdropUrl || movie.posterUrl;
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(movie.type === "game");
 
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleGameFullscreen = () => {
+    if (!document.fullscreenElement) {
+      gameContainerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => setGameFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
 
   const hasMultiLinks = (movie.downloadLinks?.length || 0) > 0;
   const hasSingleLink = !!movie.downloadUrl;
@@ -351,6 +366,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowNextMovie(false);
     setNextCountdown(10);
     setIsPlaying(false); // reset thumbnail overlay for new movie
+    setGameFullscreen(false);
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
   }, [movie.id]);
@@ -377,9 +393,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setShowShareModal(true);
   };
 
+  // Game fullscreen state
+  const [gameFullscreen, setGameFullscreen] = useState(false);
+
   // Render video iframe
   const renderVideo = () => {
     const url = movie.videoUrl;
+
+    // ── Game ──
+    if (movie.type === "game") {
+      return (
+        <iframe
+          src={url}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+          title={movie.title}
+        />
+      );
+    }
 
     // ── YouTube ──
     if (movie.videoType === "youtube" || url.includes("youtube.com") || url.includes("youtu.be")) {
@@ -542,7 +574,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-white font-bold text-sm sm:text-base truncate">{movie.title}</h1>
-            <p className="text-gray-500 text-xs truncate">{movie.year} • {movie.type === "series" ? "Series" : "Movie"}</p>
+            <p className="text-gray-500 text-xs truncate">{movie.year} • {movie.type === "series" ? "Series" : movie.type === "game" ? "Game" : "Movie"}</p>
           </div>
           <div className="flex items-center gap-2">
             {hasAnyDownload && (
@@ -555,6 +587,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 {downloadCount > 1 && (
                   <span className="bg-green-800 text-green-200 text-[9px] px-1 rounded-full">{downloadCount}</span>
                 )}
+              </button>
+            )}
+            {movie.type === "game" && (
+              <button
+                onClick={toggleGameFullscreen}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                title={gameFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              >
+                {gameFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
               </button>
             )}
             <button
@@ -647,7 +688,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                   }}
                 />
                 {/* Video with Thumbnail Overlay */}
-                <div className="relative z-10 w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-black/80 ring-1 ring-white/10">
+                <div ref={gameContainerRef} className="relative z-10 w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl shadow-black/80 ring-1 ring-white/10">
                   {/* Thumbnail overlay — shows before user clicks play */}
                   {!isPlaying && thumbnailSrc ? (
                     <div
@@ -694,8 +735,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                       {/* Bottom info bar */}
                       <div className="absolute bottom-0 left-0 right-0 px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-white text-xs font-bold bg-[#E50914] px-2 py-0.5 rounded">
-                            {movie.type === "series" ? "SERIES" : "MOVIE"}
+                          <span className={`text-white text-xs font-bold px-2 py-0.5 rounded ${
+                            movie.type === "series" ? "bg-blue-600" : movie.type === "game" ? "bg-green-600" : "bg-[#E50914]"
+                          }`}>
+                            {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
                           </span>
                           <span className="text-gray-300 text-xs">{movie.year}</span>
                           <span className="text-yellow-400 text-xs flex items-center gap-0.5 font-semibold">
@@ -744,9 +787,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
                         </span>
                       )}
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        movie.type === "series" ? "bg-blue-600/20 text-blue-400 border border-blue-600/30" : "bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30"
+                        movie.type === "series" ? "bg-blue-600/20 text-blue-400 border border-blue-600/30" : movie.type === "game" ? "bg-green-600/20 text-green-400 border border-green-600/30" : "bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30"
                       }`}>
-                        {movie.type === "series" ? "SERIES" : "MOVIE"}
+                        {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
                       </span>
                     </div>
                   </div>

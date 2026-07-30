@@ -69,7 +69,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ movies, onWatch, onAddList, onD
           <div className="flex items-center gap-3 mb-4">
             <span className="flex items-center gap-2 px-3 py-1 rounded-md font-bold text-sm bg-[#E50914] text-white">
               <span className="text-xs">N</span>
-              {movie.type === "series" ? "SERIES" : "MOVIE"}
+              {movie.type === "series" ? "SERIES" : movie.type === "game" ? "GAME" : "MOVIE"}
             </span>
           </div>
 
