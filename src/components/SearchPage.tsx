@@ -200,7 +200,7 @@ const SearchPage: React.FC<SearchPageProps> = ({
   const hasDownload = (movie: Movie) => (movie.downloadLinks?.length || 0) > 0 || !!movie.downloadUrl;
 
   return (
-    <div className="min-h-screen" style={{ background: "#080808" }}>
+    <div id="search" className="min-h-screen" style={{ background: "#080808" }}>
 
       {/* ══ HERO SEARCH SECTION ══════════════════════════════════════════════════ */}
       <div className="relative overflow-hidden" style={{ paddingTop: "80px", paddingBottom: "40px" }}>
