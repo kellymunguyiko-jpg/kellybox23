@@ -1,4 +1,3 @@
-
 import { Heart, Film } from "lucide-react";
 import { Movie } from "../types";
 import MovieCard from "./MovieCard";
@@ -21,7 +20,7 @@ const MyListPage: React.FC<MyListPageProps> = ({
   const listMovies = movies.filter((m) => myList.includes(m.id || ""));
 
   return (
-    <div className="min-h-screen bg-[#141414] pt-20 pb-12 px-4 md:px-8">
+    <div id="mylist" className="min-h-screen bg-[#141414] pt-20 pb-12 px-4 md:px-8">
       <div className="flex items-center gap-3 mb-8">
         <Heart size={24} className="text-[#E50914]" fill="#E50914" />
         <h1 className="text-white text-2xl md:text-3xl font-bold">My List</h1>
