@@ -25,7 +25,7 @@ const HomePage: React.FC<HomePageProps> = ({
   const myListMovies = movies.filter((m) => myList.includes(m.id || ""));
 
   return (
-    <div className="bg-[#141414] min-h-screen">
+    <div id="home" className="bg-[#141414] min-h-screen">
       {/* Hero */}
       <HeroBanner
         movies={movies}
