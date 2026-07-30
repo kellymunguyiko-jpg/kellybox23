@@ -58,9 +58,10 @@ const MoviesPage: React.FC<MoviesPageProps> = ({
   const title =
     type === "movie" ? "Movies" : type === "series" ? "Series" : type === "game" ? "Games" : "All Content";
   const Icon = type === "series" ? Tv : type === "game" ? Film : Film;
+  const pageId = type === "movie" ? "movies" : type === "series" ? "series" : type === "game" ? "games" : "all";
 
   return (
-    <div className="min-h-screen bg-[#141414] pt-20 pb-12 px-4 md:px-8">
+    <div id={pageId} className="min-h-screen bg-[#141414] pt-20 pb-12 px-4 md:px-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
