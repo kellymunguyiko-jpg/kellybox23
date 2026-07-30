@@ -14,10 +14,37 @@ import AdminLogin from "./components/AdminLogin";
 import DownloadPage from "./components/DownloadPage";
 import LoadingOverlay from "./components/LoadingOverlay";
 
+// ─── Hash-based URL routing ───────────────────────────────────────
+const HASH_TO_PAGE: Record<string, string> = {
+  "": "home",
+  "#": "home",
+  "#home": "home",
+  "#movies": "movies",
+  "#series": "series",
+  "#games": "games",
+  "#mylist": "mylist",
+  "#search": "search",
+};
+
+const PAGE_TO_HASH: Record<string, string> = {
+  home: "#home",
+  movies: "#movies",
+  series: "#series",
+  games: "#games",
+  mylist: "#mylist",
+  search: "#search",
+};
+
+function getInitialPage(): string {
+  if (typeof window === "undefined") return "home";
+  const hash = window.location.hash.toLowerCase();
+  return HASH_TO_PAGE[hash] || "home";
+}
+
 function App() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState("home");
+  const [currentPage, setCurrentPage] = useState<string>(getInitialPage);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Global action loading
@@ -173,6 +200,25 @@ function App() {
       setCurrentPage("movies");
     }
   }, [searchQuery]);
+
+  // Sync URL hash with current page
+  useEffect(() => {
+    const expectedHash = PAGE_TO_HASH[currentPage] || "#home";
+    if (window.location.hash !== expectedHash) {
+      window.history.replaceState(null, "", expectedHash);
+    }
+  }, [currentPage]);
+
+  // Listen for browser back/forward navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      const page = HASH_TO_PAGE[hash] || "home";
+      setCurrentPage(page);
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   // ─── Handlers with loading ───────────────────────────────────
 
